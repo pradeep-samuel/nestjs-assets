@@ -1,59 +1,75 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
-import { Asset } from './asset.model'
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Asset } from './asset.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class AssetService {
-    private assets: Asset[] = [];
+  private assets: Asset[] = [];
 
-    addAsset(title : string, type: string, fileName : string) {
-         const asset = new Asset(this.getId(), title, fileName, type, 'Pradeep Samuel', new Date());
-         this.assets.push(asset);
-         return asset.id;
-    }
+  constructor(
+    @InjectModel('Asset') private readonly assetModel: Model<Asset>,
+  ) {}
 
-    getAssets() {
-        return [... this.assets];
-    }
+  async addAsset(title: string, type: string, fileName: string) {
+    const newAsset = new this.assetModel({
+      title,
+      fileName,
+      assetType: type,
+      createdBy: 'Pradeep Samuel',
+      createdOn: new Date(),
+    });
+    const retAsset = await newAsset.save();
+    return retAsset.id;
+  }
 
-    findSingleAsset(id: number){
-        const retAsset =  this.findAsset(id)[0];
-        return {... retAsset};
-    }
+  async getAssets() {
+    const result = await this.assetModel.find().exec();
+    return result;
+  }
 
-    findAsset(id: number) : [Asset,number]{
-        const assetindex = this.assets.findIndex((asset) => asset.id == id);
-        const asset = this.assets[assetindex];
-        if(!asset){
-            throw new NotFoundException('Asset Not Found');
-        }
-        return [asset, assetindex];
-    }
+  async findSingleAsset(id: string) {
+    const retAsset = await this.findAsset(id);
+    return retAsset;
+  }
 
-    updateAsset(id : number, title : string, assetType: string, fileName : string){
-        const [asset, index] = this.findAsset(id);
-        const updatedAsset = {...asset};
-
-        if(title){
-            updatedAsset.title = title;
-        }
-        if(assetType){
-            updatedAsset.assetType = assetType;
-        }
-        if(fileName){
-            updatedAsset.fileName = fileName;
-        }
-
-        this.assets[index] = updatedAsset
-
-        return this.assets[index];
-    }
-
-    deleteAsset(assetId : number){
-        const index = this.findAsset(assetId)[1];
-        this.assets.splice(index,1);
-    }
-
-    private getId() {
-        return Math.floor(Math.random() * Math.floor(100));
+  async findAsset(id: string): Promise<Asset> {
+    let asset;
+    try {
+      asset = await this.assetModel.findById(id);
+      if (!asset) {
+        throw new NotFoundException('Asset Not Found');
       }
+    } catch (e) {}
+
+    return asset;
+  }
+
+  async updateAsset(id: string, title: string, assetType: string, fileName: string) {
+    const updateAsset = await this.findAsset(id);
+
+    if (title) {
+        updateAsset.title = title;
+    }
+    if (assetType) {
+        updateAsset.assetType = assetType;
+    }
+    if (fileName) {
+        updateAsset.fileName = fileName;
+    }
+
+    updateAsset.save();
+  }
+
+  async deleteAsset(assetId: string) {
+    const result = await this.assetModel.deleteOne({_id: assetId});
+    if(result.n === 0){
+        throw new NotFoundException('Asset not found ...')
+    }
+    
+  }
+
+  private getId() {
+    return Math.floor(Math.random() * Math.floor(100));
+  }
 }

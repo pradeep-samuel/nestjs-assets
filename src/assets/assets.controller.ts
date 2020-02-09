@@ -6,37 +6,38 @@ export class AssetController {
   constructor(private readonly assetService: AssetService) {}
 
   @Post()
-  addAsset(
+  async addAsset(
     @Body('title') title,
     @Body('type') type,
     @Body('fileName') fileName,
   ) {
-    const id = this.assetService.addAsset(title, type, fileName);
+    const id = await this.assetService.addAsset(title, type, fileName);
     return { id: id };
   }
 
   @Get()
-  getAssets() {
-    return this.assetService.getAssets();
+  async getAssets() {
+    return await this.assetService.getAssets();
   }
 
   @Get(':id')
-  findAsset(@Param('id') id: number) {
-    return this.assetService.findAsset(id);
+  async findAsset(@Param('id') id: string) {
+    return await this.assetService.findAsset(id);
   }
 
   @Patch(':id')
-  updateAsset(
+  async awaitupdateAsset(
     @Param('id') id,
     @Body('title') title,
     @Body('type') type,
     @Body('fileName') fileName,
   ) {
-        return this.assetService.updateAsset(id,title,type,fileName);
+        await this.assetService.updateAsset(id,title,type,fileName);
+        return null;
   }
 
   @Delete(':id')
-  deleteAsset(@Param('id') id){
-    this.assetService.deleteAsset(id);
+  async deleteAsset(@Param('id') id){
+    await this.assetService.deleteAsset(id);
   }
 }
